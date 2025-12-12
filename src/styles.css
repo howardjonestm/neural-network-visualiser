@@ -1,0 +1,1656 @@
+:root {
+  /* Color scheme */
+  --color-positive: #2563eb;
+  --color-negative: #dc2626;
+  --color-neuron-fill: #1f2937;
+  --color-neuron-stroke: #374151;
+  --color-background: #f9fafb;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+
+  /* Tooltip colors */
+  --tooltip-bg: #1f2937;
+  --tooltip-text: #f9fafb;
+
+  /* Control colors */
+  --control-bg: #ffffff;
+  --control-border: #d1d5db;
+  --control-active: #2563eb;
+  --control-focus: #3b82f6;
+
+  /* Sizing */
+  --neuron-radius: 20px;
+  --weight-min-thickness: 1px;
+  --weight-max-thickness: 6px;
+
+  /* T001: Neuron intensity colors (activation-based) */
+  --neuron-hue: 220;
+  --neuron-saturation: 70%;
+  --neuron-lightness-low: 85%;
+  --neuron-lightness-high: 25%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "header"
+    "visualisation"
+    "controls";
+  min-height: 100vh;
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+/* T011: Legend container removed from layout - styles kept for potential reuse */
+
+/* T009: Header aligned to top-left */
+header {
+  grid-area: header;
+  text-align: left;
+  padding: 0.75rem 0;
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+#visualisation {
+  grid-area: visualisation;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+#network-svg {
+  width: 100%;
+  max-width: 1000px;
+  height: 100%;
+  min-height: 450px;
+}
+
+#controls-container {
+  grid-area: controls;
+}
+
+/* T002: Control panel grid layout class */
+.control-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* T015-T017: Control panel styles for training/run layout */
+.control-panel {
+  background-color: var(--control-bg);
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.control-panel h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--control-border);
+}
+
+/* T015: Controls inside panel - no duplicate border/bg */
+#controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* T026-T027: Neuron styles - fill set dynamically via JS based on activation */
+.neuron {
+  /* T026: fill is now set dynamically via getNeuronFill() - removed default */
+  stroke: var(--color-neuron-stroke);
+  stroke-width: 2px;
+  cursor: pointer;
+  /* T027: CSS transition for smooth fill color changes */
+  transition: fill 0.3s ease, stroke-width 0.15s ease;
+}
+
+.neuron:hover,
+.neuron:focus {
+  stroke: var(--control-active);
+  stroke-width: 3px;
+}
+
+.neuron:focus {
+  outline: none;
+  stroke: var(--control-focus);
+  stroke-width: 4px;
+}
+
+/* Weight line styles */
+.weight {
+  fill: none;
+  stroke-linecap: round;
+  cursor: pointer;
+  transition: stroke-width 0.3s ease, stroke 0.3s ease;
+}
+
+.weight.positive {
+  stroke: var(--color-positive);
+}
+
+.weight.negative {
+  stroke: var(--color-negative);
+}
+
+.weight:hover {
+  stroke-opacity: 0.7;
+}
+
+.weight:focus {
+  outline: none;
+  stroke-opacity: 1;
+  filter: drop-shadow(0 0 3px var(--control-focus));
+}
+
+/* T001, T034: Weight change highlight classes (800ms duration for better visibility) */
+.weight-increase {
+  stroke: #22c55e !important;
+  filter: brightness(1.3);
+  transition: stroke 0.8s ease-out, filter 0.8s ease-out;
+}
+
+.weight-decrease {
+  stroke: #ef4444 !important;
+  filter: brightness(0.8);
+  transition: stroke 0.8s ease-out, filter 0.8s ease-out;
+}
+
+.weight-increase.magnitude-small {
+  filter: brightness(1.1);
+}
+
+.weight-increase.magnitude-medium {
+  filter: brightness(1.2);
+}
+
+.weight-increase.magnitude-large {
+  filter: brightness(1.4);
+}
+
+.weight-decrease.magnitude-small {
+  filter: brightness(0.9);
+}
+
+.weight-decrease.magnitude-medium {
+  filter: brightness(0.8);
+}
+
+.weight-decrease.magnitude-large {
+  filter: brightness(0.6);
+}
+
+/* T037: Arrow marker styling for gradient direction indicators */
+.weight-arrow-up,
+.weight-arrow-down {
+  /* Ensure marker visibility */
+  marker-mid: inherit;
+}
+
+.weight-arrow-up {
+  /* Arrow up for increasing weights */
+}
+
+.weight-arrow-down {
+  /* Arrow down for decreasing weights */
+}
+
+/* Layer labels */
+.layer-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  fill: var(--color-text-muted);
+  text-anchor: middle;
+}
+
+/* T020: Layer type visual styling */
+.layer-label.input {
+  fill: var(--color-positive);
+  font-weight: 600;
+}
+
+.layer-label.hidden {
+  fill: var(--color-text-muted);
+}
+
+.layer-label.output {
+  fill: var(--color-negative);
+  font-weight: 600;
+}
+
+/* Layer index annotations */
+.layer-index {
+  font-size: 0.625rem;
+  fill: var(--color-text-muted);
+  text-anchor: middle;
+  opacity: 0.7;
+}
+
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 1000;
+  /* T033: Increased max-width to accommodate longer explanation content */
+  max-width: 280px;
+}
+
+.tooltip.visible {
+  opacity: 1;
+}
+
+/* T032: Tooltip explanation text styling */
+.tooltip-explanation {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.75rem;
+  color: #9ca3af;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* T017: Delta color coding in tooltips */
+.tooltip .delta-positive {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.tooltip .delta-negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* T024: Activation tooltip styles */
+.activation-tooltip {
+  max-width: 180px;
+}
+
+.activation-tooltip .activation-formula {
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.activation-tooltip .activation-values {
+  margin-bottom: 0.5rem;
+}
+
+.activation-tooltip .activation-value {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.15rem 0;
+}
+
+.activation-tooltip .activation-value .label {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.activation-tooltip .activation-value .value {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.85rem;
+}
+
+.activation-tooltip .sigmoid-curve-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.activation-tooltip .sigmoid-curve {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+/* T035: Weight history panel styles */
+.weight-history-panel {
+  position: fixed;
+  width: 220px;
+  max-height: 320px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.weight-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.weight-history-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.weight-history-close {
+  background: none;
+  border: none;
+  color: var(--tooltip-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.weight-history-close:hover {
+  opacity: 1;
+}
+
+.weight-history-content {
+  padding: 0.5rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.weight-history-empty {
+  padding: 1rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.history-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 80px;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 0.25rem;
+}
+
+.history-entry {
+  display: grid;
+  grid-template-columns: 40px 1fr 80px;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
+}
+
+.history-entry:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.history-step {
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+.history-value {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.8rem;
+}
+
+.history-delta {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.history-delta.positive {
+  color: #22c55e;
+}
+
+.history-delta.negative {
+  color: #ef4444;
+}
+
+.history-delta.none {
+  color: #6b7280;
+}
+
+/* Control buttons */
+.control-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  background-color: var(--control-bg);
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.control-btn:hover {
+  background-color: var(--color-background);
+  border-color: var(--control-active);
+}
+
+.control-btn:focus {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+}
+
+.control-btn:active {
+  background-color: var(--control-active);
+  color: white;
+}
+
+.control-btn.active {
+  background-color: var(--control-active);
+  color: white;
+  border-color: var(--control-active);
+}
+
+/* Slider control */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.slider-container label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.slider-container input[type="range"] {
+  width: 120px;
+  height: 4px;
+  cursor: pointer;
+}
+
+.slider-value {
+  min-width: 3rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Stats display */
+.stats {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.stat {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.stat-label {
+  color: var(--color-text-muted);
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.stat-explanation {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0.25rem 0 0 0;
+  font-style: italic;
+}
+
+/* Control sections */
+.control-section {
+  width: 100%;
+}
+
+.control-section h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.75rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.button-group .control-btn {
+  flex: 1;
+}
+
+.stats-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--color-background);
+  border-radius: 4px;
+}
+
+.keyboard-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.keyboard-hints span {
+  padding: 0.125rem 0.375rem;
+  background-color: var(--color-background);
+  border-radius: 2px;
+}
+
+.parameter-hints {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+/* Reset button */
+.reset-btn {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.reset-controls .keyboard-hints {
+  justify-content: center;
+}
+
+/* Legend Component (T012) */
+.legend {
+  background-color: var(--control-bg);
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: width 0.2s ease;
+}
+
+.legend.expanded {
+  width: 220px;
+}
+
+.legend.collapsed {
+  width: auto;
+}
+
+.legend-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: left;
+  border-bottom: 1px solid var(--control-border);
+}
+
+.legend-toggle:hover {
+  background-color: var(--color-background);
+}
+
+.legend-toggle:focus {
+  outline: 2px solid var(--control-focus);
+  outline-offset: -2px;
+}
+
+.legend.collapsed .legend-toggle {
+  border-bottom: none;
+}
+
+.legend-toggle-icon {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.legend-content {
+  padding: 0.75rem;
+}
+
+.legend-content[hidden] {
+  display: none;
+}
+
+.legend-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--control-border);
+}
+
+.legend-section {
+  margin-bottom: 1rem;
+}
+
+.legend-section:last-child {
+  margin-bottom: 0;
+}
+
+.legend-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.legend-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legend-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.25rem 0.5rem;
+  padding: 0.375rem 0;
+  align-items: center;
+}
+
+.legend-visual {
+  grid-row: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.legend-svg {
+  display: block;
+}
+
+.legend-svg-wide {
+  width: 48px;
+}
+
+.legend-label {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.legend-description {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.legend-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 0.125rem 0.375rem;
+  border-radius: 2px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* T028: Hint/Callout Styles */
+.hint {
+  max-width: 280px;
+  padding: 0;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: hint-appear 0.2s ease-out;
+}
+
+@keyframes hint-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hint-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.hint-dismiss {
+  background: none;
+  border: none;
+  color: var(--tooltip-text);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.hint-dismiss:hover {
+  opacity: 1;
+}
+
+.hint-dismiss:focus {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+}
+
+.hint-content {
+  padding: 0.75rem;
+  margin: 0;
+  line-height: 1.5;
+  color: rgba(249, 250, 251, 0.9);
+}
+
+/* Hint arrows */
+.hint::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+}
+
+.hint-arrow-top::before {
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-color: var(--tooltip-bg);
+}
+
+.hint-arrow-bottom::before {
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: var(--tooltip-bg);
+}
+
+.hint-arrow-left::before {
+  left: -16px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-right-color: var(--tooltip-bg);
+}
+
+.hint-arrow-right::before {
+  right: -16px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left-color: var(--tooltip-bg);
+}
+
+/* T004: Error severity colors for training visualization */
+.error-good {
+  color: #22c55e;
+}
+
+.error-moderate {
+  color: #eab308;
+}
+
+.error-poor {
+  color: #ef4444;
+}
+
+/* Background variants for error severity */
+.error-good-bg {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+}
+
+.error-moderate-bg {
+  background-color: rgba(234, 179, 8, 0.1);
+  border-color: #eab308;
+}
+
+.error-poor-bg {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+/* T005: Training info display section */
+.training-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: var(--color-background);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.training-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.training-info-label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.training-info-value {
+  font-weight: 600;
+  color: var(--color-text);
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+}
+
+.training-sample-display {
+  padding: 0.5rem;
+  background-color: var(--control-bg);
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.training-sample-inputs {
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.training-sample-arrow {
+  color: var(--color-text-muted);
+  margin: 0 0.25rem;
+}
+
+.training-sample-expected {
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.training-error-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--control-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.training-error-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.training-error-label {
+  color: var(--color-text-muted);
+}
+
+.training-error-value {
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.training-status {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 4px;
+  background-color: var(--color-background);
+}
+
+.training-status.ready {
+  color: var(--color-text-muted);
+}
+
+.training-status.training {
+  color: var(--control-active);
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.training-status.converged {
+  color: #22c55e;
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+/* T044: Animation toggle button styling */
+.animation-toggle {
+  width: 100%;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  transition: all 0.2s ease;
+}
+
+.animation-toggle.active {
+  background-color: var(--control-active);
+  color: white;
+  border-color: var(--control-active);
+}
+
+.animation-toggle:hover {
+  border-color: var(--control-active);
+}
+
+/* T036: Loss Trend Indicator */
+.loss-trend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-left: 0.25rem;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.trend-improving {
+  background-color: #22c55e;
+  color: white;
+}
+
+.trend-worsening {
+  background-color: #ef4444;
+  color: white;
+}
+
+.trend-stable {
+  background-color: #eab308;
+  color: white;
+}
+
+.trend-converged {
+  background-color: #22c55e;
+  color: white;
+}
+
+.stat-loss {
+  display: flex;
+  align-items: center;
+}
+
+/* T038: Reset Hints Button */
+.reset-hints-btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* T042, T047: Resources Panel Styles */
+.resources-panel {
+  background-color: var(--control-bg);
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.resources-section {
+  border-bottom: 1px solid var(--control-border);
+}
+
+.resources-section:last-child {
+  border-bottom: none;
+}
+
+.resources-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.resources-section-toggle:hover {
+  background-color: var(--color-background);
+}
+
+.resources-section-toggle:focus {
+  outline: 2px solid var(--control-focus);
+  outline-offset: -2px;
+}
+
+.toggle-icon {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.resources-section-content {
+  padding: 0.75rem;
+  background-color: var(--color-background);
+}
+
+.resources-section-content[hidden] {
+  display: none;
+}
+
+/* LLM Content Section */
+.content-section {
+  margin-bottom: 1rem;
+}
+
+.content-section:last-child {
+  margin-bottom: 0;
+}
+
+.content-heading {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.375rem 0;
+}
+
+.content-body {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0 0 0.375rem 0;
+}
+
+.content-emphasis {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--control-active);
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(37, 99, 235, 0.1);
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Resource List */
+.resource-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.resource-card {
+  margin-bottom: 0.5rem;
+}
+
+.resource-card:last-child {
+  margin-bottom: 0;
+}
+
+.resource-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: var(--control-bg);
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--color-text);
+  transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+.resource-link:hover {
+  background-color: var(--color-background);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.resource-link:focus {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+}
+
+.resource-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.resource-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.resource-title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.125rem;
+}
+
+.resource-description {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.resource-meta {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.resource-type {
+  color: var(--color-text-muted);
+}
+
+.resource-external {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+/* T056: Keyboard focus styles for interactive elements */
+*:focus-visible {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+}
+
+.legend-toggle:focus-visible,
+.resources-section-toggle:focus-visible,
+.hint-dismiss:focus-visible,
+.resource-link:focus-visible,
+.control-btn:focus-visible {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+}
+
+/* Skip link for accessibility */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ========================================
+   DEMO MODULE STYLES
+   T016, T021, T028, T038, T047, T054, T059, T072
+   ======================================== */
+
+/* Demo Controls Container */
+#demo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  background-color: var(--control-bg);
+  border-radius: 8px;
+  border: 1px solid var(--control-border);
+}
+
+#demo-controls:empty {
+  display: none;
+}
+
+.demo-controls-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+}
+
+/* T016: Demo button styling */
+.demo-btn {
+  background-color: var(--control-active);
+  color: white;
+  border-color: var(--control-active);
+}
+
+.demo-btn:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.demo-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* T028: Input selector styling */
+.input-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-selector-label {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.input-selector {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  background-color: var(--control-bg);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.input-selector:focus {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+}
+
+/* Expected output display */
+.expected-output-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.expected-output-label {
+  color: var(--color-text-muted);
+}
+
+.expected-output-value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* T038: Step controls styling */
+.step-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.step-btn {
+  flex: 1;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.step-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Step indicator */
+.step-indicator {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 0.25rem 0;
+}
+
+/* T047: Speed selector styling */
+.speed-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.speed-label {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.speed-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  background-color: var(--control-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.speed-btn:hover {
+  border-color: var(--control-active);
+}
+
+.speed-btn.active {
+  background-color: var(--control-active);
+  color: white;
+  border-color: var(--control-active);
+}
+
+.speed-btn:focus {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+}
+
+/* Pause/Resume button */
+.pause-btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+/* Prediction display */
+.prediction-display {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background-color: var(--color-background);
+}
+
+.prediction-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.prediction-label {
+  color: var(--color-text-muted);
+}
+
+.prediction-value {
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.prediction-class {
+  color: var(--color-text-muted);
+}
+
+.prediction-status {
+  font-weight: 600;
+}
+
+.prediction-result.correct .prediction-status {
+  color: #22c55e;
+}
+
+.prediction-result.incorrect .prediction-status {
+  color: #ef4444;
+}
+
+/* T021: Demo pulse animation styling */
+.demo-pulse {
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.demo-pulse.positive {
+  fill: var(--color-positive);
+}
+
+.demo-pulse.negative {
+  fill: var(--color-negative);
+}
+
+/* Demo active neuron highlight */
+.neuron.demo-active {
+  filter: drop-shadow(0 0 6px var(--control-focus));
+}
+
+/* Input value labels on neurons */
+.input-value-label {
+  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* T054: Calculation Panel styling */
+#calculation-panel {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background-color: var(--control-bg);
+  border-radius: 8px;
+  border: 1px solid var(--control-border);
+}
+
+#calculation-panel:empty {
+  display: none;
+}
+
+.calculation-panel-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--control-border);
+}
+
+.calculation-panel-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.calculation-layer-section {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: var(--color-background);
+  border-radius: 6px;
+  border: 1px solid var(--control-border);
+}
+
+.calculation-layer-section:last-child {
+  margin-bottom: 0;
+}
+
+.calculation-layer-section.active {
+  border-color: var(--control-active);
+  box-shadow: 0 0 0 1px var(--control-active);
+}
+
+.calculation-layer-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--control-active);
+  margin-bottom: 0.5rem;
+}
+
+.calculation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.calculation-item {
+  padding: 0.5rem;
+  margin-bottom: 0.375rem;
+  background-color: var(--color-background);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.calculation-item:last-child {
+  margin-bottom: 0;
+}
+
+.calculation-item.active {
+  border-left: 3px solid var(--control-active);
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+.calculation-neuron-id {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+}
+
+.calculation-formula {
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+/* T062: Disabled during demo styling */
+.disabled-during-demo {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* T072: Keyboard focus styles for demo elements */
+.demo-btn:focus-visible,
+.step-btn:focus-visible,
+.speed-btn:focus-visible,
+.pause-btn:focus-visible,
+.input-selector:focus-visible {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+}
+
+/* Stack panels vertically on smaller screens */
+@media (max-width: 767px) {
+  #training-panel,
+  #run-panel {
+    width: 100%;
+  }
+}
+
+/* Responsive design - tablet and mobile */
+@media (max-width: 1023px) {
+  #app {
+    padding: 0.5rem;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "visualisation"
+      "training"
+      "run";
+  }
+
+  header h1 {
+    font-size: 1.25rem;
+  }
+
+  #training-panel {
+    grid-area: training;
+  }
+
+  #run-panel {
+    grid-area: run;
+  }
+
+  #controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* T053: Stack panels on smaller screens */
+  .resources-panel {
+    margin-top: 0.75rem;
+  }
+
+  .hint {
+    max-width: calc(100vw - 2rem);
+    left: 1rem !important;
+    right: 1rem !important;
+  }
+}
+
+/* Desktop layout: Train | Visualization | Run */
+@media (min-width: 1024px) {
+  #app {
+    grid-template-columns: 240px 1fr 280px;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "header header header"
+      "training visualisation run";
+  }
+
+  #training-panel {
+    grid-area: training;
+    height: fit-content;
+    position: sticky;
+    top: 1rem;
+  }
+
+  #run-panel {
+    grid-area: run;
+    height: fit-content;
+    position: sticky;
+    top: 1rem;
+  }
+
+  #visualisation {
+    grid-area: visualisation;
+  }
+
+  #controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  /* T013: Expanded visualization area */
+  #visualisation {
+    justify-content: center;
+  }
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Network Visualiser</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main id="app">
+    <header>
+      <h1>Neural Network Visualiser</h1>
+    </header>
+    <!-- Training panel on left -->
+    <aside id="training-panel" class="control-panel">
+      <h3>Train Network</h3>
+      <!-- T012: Container for training visualization info display -->
+      <div id="training-info-container" aria-label="Training Information"></div>
+      <div id="controls"></div>
+    </aside>
+    <!-- Visualization in center -->
+    <section id="visualisation">
+      <svg id="network-svg"></svg>
+    </section>
+    <!-- Run panel on right -->
+    <aside id="run-panel" class="control-panel">
+      <h3>Run Network</h3>
+      <div id="demo-controls" aria-label="Run Network Controls"></div>
+      <div id="calculation-panel" aria-label="Calculation Display"></div>
+    </aside>
+  </main>
+  <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
+  <div id="weight-history-panel"></div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

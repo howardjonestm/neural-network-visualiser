@@ -1,50 +1,156 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+SYNC IMPACT REPORT
+==================
+Version change: 0.0.0 → 1.0.0 (Initial constitution creation)
+
+Modified principles: N/A (new constitution)
+
+Added sections:
+- Core Principles (5 principles defined)
+- Technical Constraints (static hosting, client-side only)
+- User Experience Standards (accessibility, progressive disclosure)
+- Governance
+
+Removed sections: N/A
+
+Templates requiring updates:
+- .specify/templates/plan-template.md - ✅ Compatible (no changes needed)
+- .specify/templates/spec-template.md - ✅ Compatible (no changes needed)
+- .specify/templates/tasks-template.md - ✅ Compatible (no changes needed)
+
+Follow-up TODOs: None
+==================
+-->
+
+# Neural Network Visualiser Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Visual-First Design
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+All features MUST prioritize visual representation over textual explanation.
+Complex concepts MUST be demonstrated through interactive animations and
+diagrams before being described in text. The visualisation is the primary
+teaching tool; text serves only to support and contextualise what users see.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Rationale**: Users learn neural network concepts more effectively through
+seeing how weights adjust in real-time than reading about matrix operations.
+The raft.github.io approach demonstrates that complex distributed systems
+concepts become accessible when users can watch them in action.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Educational Clarity
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Every visual element MUST map directly to a neural network concept (neuron,
+layer, weight, bias, activation). Users MUST be able to:
+- Identify individual neurons and understand their role
+- See weights as visible connections with values
+- Observe how biases affect neuron outputs
+- Watch weight adjustments during learning
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+No visual element may exist purely for aesthetic purposes; all must teach.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+**Rationale**: The goal is comprehension, not impression. Users should leave
+with a primitive but accurate mental model of how neural networks function.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### III. Static Deployment
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+The entire application MUST function as a static website deployable to GitHub
+Pages with zero server-side dependencies. All computation MUST occur in the
+browser using JavaScript/TypeScript. No database, API calls, or build-time
+computation may be required for the core visualisation to function.
+
+**Rationale**: Accessibility requires minimal friction. Users should access
+the visualiser via a single URL without installation, accounts, or waiting
+for server responses.
+
+### IV. Progressive Disclosure
+
+Information MUST be layered from simple to complex. Initial view shows only
+the network structure and basic animation. Advanced details (matrix math,
+gradient calculations, backpropagation steps) MUST be hidden by default and
+revealed through deliberate user interaction.
+
+**Rationale**: Beginners need immediate visual feedback without cognitive
+overload. Advanced users can drill down into mathematical details when ready.
+This mirrors the raft.github.io approach of starting with a live simulation
+before linking to papers and implementations.
+
+### V. Interactivity Over Passivity
+
+Users MUST be able to interact with the visualisation, not merely observe it.
+Required interactions include:
+- Triggering training steps manually or via play/pause
+- Adjusting learning rate and seeing immediate effects
+- Hovering/clicking to inspect specific weights and neurons
+- Resetting the network to observe different training runs
+
+**Rationale**: Active participation creates deeper understanding than passive
+observation. Users who can experiment with parameters develop intuition about
+why neural networks behave as they do.
+
+## Technical Constraints
+
+### Deployment Requirements
+
+- MUST deploy as static files (HTML, CSS, JS) to GitHub Pages
+- MUST NOT require any backend services or APIs
+- MUST work in modern browsers (Chrome, Firefox, Safari, Edge latest 2 versions)
+- MUST load and become interactive within 3 seconds on standard connections
+- SHOULD remain functional offline once initially loaded
+
+### Technology Boundaries
+
+- Client-side rendering only (no SSR required)
+- Vanilla JS/TS or lightweight frameworks acceptable (no heavy frameworks
+  that bloat bundle size beyond 500KB gzipped)
+- SVG or Canvas for visualisations; WebGL optional for performance
+- No external runtime dependencies for core functionality
+
+## User Experience Standards
+
+### Accessibility
+
+- MUST support keyboard navigation for all interactive elements
+- MUST provide sufficient color contrast (WCAG AA minimum)
+- SHOULD provide alternative text descriptions for key visual states
+- MUST NOT rely solely on color to convey information (use shape/pattern)
+
+### Responsive Design
+
+- MUST function on desktop viewports (1024px+)
+- SHOULD adapt gracefully to tablet viewports (768px-1023px)
+- MAY provide limited functionality on mobile (display only, reduced
+  interactivity acceptable)
+
+### Performance
+
+- Initial render MUST complete within 1 second
+- Animation frame rate MUST maintain 30fps minimum during training
+- No user interaction may block the main thread for >100ms
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution establishes the non-negotiable principles for the Neural
+Network Visualiser project. All implementation decisions MUST align with
+these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### Amendment Process
+
+1. Proposed changes MUST be documented with rationale
+2. Changes affecting core principles require explicit justification of why
+   the educational mission is better served
+3. Technical constraint changes must demonstrate necessity
+4. Version increment follows semantic versioning:
+   - MAJOR: Core principle changes
+   - MINOR: New sections or significant guidance expansion
+   - PATCH: Clarifications and wording improvements
+
+### Compliance
+
+- All pull requests MUST verify alignment with Visual-First Design (Principle I)
+- Features adding text without corresponding visualisation require explicit
+  justification referencing Principle II
+- Any proposed backend dependency violates Principle III and requires
+  constitution amendment before consideration
+
+**Version**: 1.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2025-12-09
