@@ -239,19 +239,21 @@ export function updatePauseButton(button: HTMLButtonElement, isPaused: boolean):
 }
 
 /**
- * T032: Create prediction result display
+ * T024: Create prominent prediction result card for US4
  */
 export function createPredictionDisplay(container: HTMLElement): HTMLDivElement {
   const wrapper = document.createElement('div');
   wrapper.id = 'prediction-display';
-  wrapper.className = 'prediction-display';
+  wrapper.className = 'prediction-result-card';
   wrapper.style.display = 'none';
   container.appendChild(wrapper);
   return wrapper;
 }
 
 /**
- * Update prediction display after demo completion
+ * T024, T025: Update prominent prediction display after demo completion
+ * Shows Expected vs Predicted side-by-side with color coding
+ * 009: Enhanced to be much more prominent with bold styling
  */
 export function updatePredictionDisplay(
   element: HTMLDivElement,
@@ -266,13 +268,21 @@ export function updatePredictionDisplay(
 
   const predictedClass = prediction >= 0.5 ? 1 : 0;
   const isCorrect = predictedClass === expected;
+  const statusClass = isCorrect ? 'correct' : 'incorrect';
 
+  // 009: Much more prominent prediction display with large bold text
   element.innerHTML = `
-    <div class="prediction-result ${isCorrect ? 'correct' : 'incorrect'}">
-      <span class="prediction-label">Prediction:</span>
-      <span class="prediction-value">${prediction.toFixed(3)}</span>
-      <span class="prediction-class">(${predictedClass})</span>
-      <span class="prediction-status">${isCorrect ? '✓ Correct' : '✗ Wrong'}</span>
+    <div class="prominent-prediction-card ${statusClass}">
+      <div class="prediction-title">Prediction Result</div>
+      <div class="prediction-main-value ${statusClass}">
+        <span class="output-value">${prediction.toFixed(3)}</span>
+        <span class="output-arrow">→</span>
+        <span class="output-class">${predictedClass}</span>
+      </div>
+      <div class="prediction-comparison">
+        <span class="expected-label">Expected: <strong>${expected}</strong></span>
+        <span class="verdict ${statusClass}">${isCorrect ? '✓ Correct!' : '✗ Incorrect'}</span>
+      </div>
     </div>
   `;
   element.style.display = 'block';

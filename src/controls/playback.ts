@@ -21,7 +21,6 @@ export class PlaybackControls {
   private callbacks: PlaybackCallbacks;
 
   // UI Elements
-  private stepButton: HTMLButtonElement | null = null;
   private playButton: HTMLButtonElement | null = null;
   private stepDisplay: HTMLElement | null = null;
   private lossDisplay: HTMLElement | null = null;
@@ -55,6 +54,10 @@ export class PlaybackControls {
     this.updateDisplay();
   }
 
+  /**
+   * T031: Simplified training controls - removed Step button per FR-020
+   * 009 T021-T026: Horizontal Play/Reset layout, removed titles and duplicate stats
+   */
   private createUI(): void {
     const container = document.getElementById('controls');
     if (!container) {
@@ -62,17 +65,16 @@ export class PlaybackControls {
       return;
     }
 
-    // Create playback controls section
+    // 009 T021, T023: Simplified controls - no section title, horizontal buttons
     const playbackSection = document.createElement('div');
     playbackSection.className = 'control-section playback-controls';
     playbackSection.innerHTML = `
-      <h3>Training Controls</h3>
-      <div class="button-group">
-        <button id="step-btn" class="control-btn" aria-label="Step forward one training iteration">
-          Step
-        </button>
+      <div class="training-controls-inline">
         <button id="play-btn" class="control-btn" aria-label="Play or pause continuous training">
           Play
+        </button>
+        <button id="reset-btn" class="control-btn" aria-label="Reset network to new random weights">
+          Reset
         </button>
       </div>
       <div class="stats-display">
@@ -85,27 +87,18 @@ export class PlaybackControls {
           <span id="loss-value" class="stat-value">0.000</span>
           <span id="loss-trend" class="loss-trend" aria-live="polite"></span>
         </div>
-        <p class="stat-explanation">Loss measures prediction error. Lower is better!</p>
-      </div>
-      <div class="keyboard-hints">
-        <span>Space: Play/Pause</span>
-        <span>→: Step</span>
       </div>
     `;
 
     container.appendChild(playbackSection);
 
     // Cache element references
-    this.stepButton = document.getElementById('step-btn') as HTMLButtonElement;
     this.playButton = document.getElementById('play-btn') as HTMLButtonElement;
     this.stepDisplay = document.getElementById('step-count');
     this.lossDisplay = document.getElementById('loss-value');
   }
 
   private bindEvents(): void {
-    // Step button
-    this.stepButton?.addEventListener('click', () => this.step());
-
     // Play/Pause button
     this.playButton?.addEventListener('click', () => this.togglePlay());
 

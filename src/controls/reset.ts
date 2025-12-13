@@ -41,29 +41,13 @@ export class ResetControls {
     this.bindEvents();
   }
 
+  /**
+   * T033: Simplified reset controls - removed keyboard shortcut notice per FR-022
+   * 009 T022, T024: Reset button now created by PlaybackControls in horizontal layout
+   */
   private createUI(): void {
-    const container = document.getElementById('controls');
-    if (!container) {
-      console.warn('Controls container not found');
-      return;
-    }
-
-    // Create reset section
-    const resetSection = document.createElement('div');
-    resetSection.className = 'control-section reset-controls';
-    resetSection.innerHTML = `
-      <h3>Reset Network</h3>
-      <button id="reset-btn" class="control-btn reset-btn" aria-label="Reset network to new random weights">
-        Reset
-      </button>
-      <div class="keyboard-hints">
-        <span>R: Reset</span>
-      </div>
-    `;
-
-    container.appendChild(resetSection);
-
-    // Cache element references
+    // 009 T024: Reset button is now created by PlaybackControls alongside Play button
+    // Just get reference to the existing button
     this.resetButton = document.getElementById('reset-btn') as HTMLButtonElement;
   }
 

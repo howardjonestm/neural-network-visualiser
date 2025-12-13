@@ -1,4 +1,4 @@
-// Neural Network Visualiser - Main Entry Point
+// Neural Network Training Tutorial - Main Entry Point
 
 import { createNetwork } from './network/network';
 import { NetworkRenderer } from './visualisation/renderer';
@@ -13,6 +13,18 @@ import { DEFAULT_TRAINING_CONFIG } from './network/types';
 import { WeightDeltaTracker, type WeightDelta } from './visualisation/weight-delta';
 import { WeightHistoryPanel } from './visualisation/weight-history-panel';
 import { TrainingPanel } from './visualisation/training-panel';
+
+// Tutorial module imports
+import { createTutorialState, type TutorialStateManager } from './tutorial/state';
+import { ScrollManager } from './tutorial/scroll-manager';
+import type { SectionId } from './tutorial/types';
+import { SECTION_IDS } from './tutorial/types';
+import {
+  ObjectivesSection,
+  TrainingSection,
+  TourSection,
+  InferenceSection,
+} from './tutorial/sections';
 
 // Demo module imports
 import {
@@ -41,7 +53,6 @@ import {
   startAutoAdvanceTimer,
   CalculationPanel,
   XOR_EXPECTED,
-  animateTrainingSample,
 } from './demo';
 import type { DemoState, DemoSpeed, XORInput } from './demo';
 import { calculateNeuronPositions, getResponsiveConfig } from './visualisation/layout';
@@ -72,8 +83,15 @@ let weightHistoryPanel: WeightHistoryPanel;
 // T017: Training panel for visualization
 let trainingPanel: TrainingPanel;
 
-// T045: Training animation state
-let isTrainingAnimated = false;
+// Tutorial state and scroll management
+let tutorialState: TutorialStateManager;
+let scrollManager: ScrollManager;
+
+// Tutorial section instances
+let objectivesSection: ObjectivesSection;
+let trainingSection: TrainingSection;
+let tourSection: TourSection;
+let inferenceSection: InferenceSection;
 
 // Track hovered element for dynamic tooltip updates during training
 let hoveredNeuron: Neuron | null = null;
@@ -127,16 +145,8 @@ function init(): void {
   weightHistoryPanel = new WeightHistoryPanel({ containerId: 'weight-history-panel' });
   weightHistoryPanel.setTracker(weightDeltaTracker);
 
-  // T017: Initialize training panel with animation callback
-  trainingPanel = new TrainingPanel('training-info-container', {
-    onAnimationChange: (animated) => {
-      isTrainingAnimated = animated;
-      // T046: Auto-disable animation during continuous play (too fast)
-      if (animated && playbackControls?.isPlaying()) {
-        console.log('Animation enabled - pausing continuous training for animated mode');
-      }
-    },
-  });
+  // T017: Initialize training panel
+  trainingPanel = new TrainingPanel('training-info-container');
 
   // Initialize playback controls with weight delta hooks
   playbackControls = new PlaybackControls(network, renderer, trainingConfig, {
@@ -160,24 +170,6 @@ function init(): void {
 
       // T018: Update training panel with step summary
       trainingPanel.updateSummary(trainingConfig.stepCount, result.loss);
-
-      // T042-T045: Animate if enabled and not in continuous play mode
-      console.log('onAfterTrainStep: isTrainingAnimated=', isTrainingAnimated, 'isPlaying=', playbackControls.isPlaying());
-      if (isTrainingAnimated && !playbackControls.isPlaying()) {
-        console.log('Starting training animation...');
-        const svgElement = document.getElementById('network-svg') as SVGSVGElement | null;
-        console.log('SVG element:', svgElement);
-        if (svgElement) {
-          const svg = d3.select(svgElement) as d3.Selection<SVGSVGElement, unknown, null, undefined>;
-          const svgRect = svgElement.getBoundingClientRect();
-          console.log('SVG rect:', svgRect.width, 'x', svgRect.height);
-          const layoutConfig = getResponsiveConfig(svgRect.width || 800, svgRect.height || 400);
-          // Animate once after the step using the last sample's inputs
-          const lastSample = result.sampleResults[result.sampleResults.length - 1];
-          await animateTrainingSample(svg, network, lastSample.sample.inputs, layoutConfig);
-          console.log('Training animation complete');
-        }
-      }
 
       // Refresh tooltip if hovering over a weight or neuron during training
       refreshHoveredTooltip();
@@ -212,7 +204,10 @@ function init(): void {
   // Initialize demo controls
   initializeDemoControls();
 
-  console.log('Neural Network Visualiser initialized');
+  // Initialize tutorial state and scroll manager
+  initializeTutorial();
+
+  console.log('Neural Network Training Tutorial initialized');
   console.log(`Network architecture: [${network.architecture.join(', ')}]`);
   console.log(`Total neurons: ${network.layers.reduce((sum, l) => sum + l.neurons.length, 0)}`);
   console.log(`Total weights: ${network.weights.length}`);
@@ -652,13 +647,32 @@ function handleDemoStateChange(state: DemoState): void {
     );
   }
 
-  // T032: Show prediction at end
-  if (state.currentStepIndex === state.totalSteps - 1 && currentStep.isComplete) {
+  // T032: Show prediction when we reach the last step (output layer)
+  if (state.currentStepIndex === state.totalSteps - 1) {
     const prediction = getPrediction(state.steps);
     const expected = XOR_EXPECTED[state.selectedInput.join(',')];
+    const predictedClass = prediction >= 0.5 ? 1 : 0;
+    const isCorrect = predictedClass === expected;
+
     if (demoElements.predictionDisplay) {
       updatePredictionDisplay(demoElements.predictionDisplay, prediction, expected, true);
     }
+    // 009: Also show prediction inside calculation panel
+    if (calculationPanel) {
+      calculationPanel.showPrediction(prediction, expected);
+    }
+    // 009: Show prediction overlay on the network visualization
+    if (renderer) {
+      renderer.showPredictionOverlay(prediction, expected);
+    }
+    // 009: Update inference section's prominent prediction display
+    inferenceSection.updatePredictionDisplay({
+      input: state.selectedInput,
+      expected,
+      predicted: prediction,
+      isCorrect,
+      threshold: 0.5
+    });
   }
 }
 
@@ -717,6 +731,147 @@ function handleDemoKeyboard(event: KeyboardEvent): void {
 
 // Add keyboard listener
 document.addEventListener('keydown', handleDemoKeyboard);
+
+/**
+ * Initialize tutorial state management and scroll detection
+ */
+function initializeTutorial(): void {
+  // Create tutorial state manager
+  tutorialState = createTutorialState();
+
+  // T017: Create section instances
+  objectivesSection = new ObjectivesSection();
+  trainingSection = new TrainingSection();
+  tourSection = new TourSection();
+  inferenceSection = new InferenceSection();
+
+  // Initialize all sections with tutorial state
+  // 009: Pass renderer to sections that need it for animations
+  objectivesSection.initialize(tutorialState);
+  trainingSection.initialize(tutorialState, renderer);
+  tourSection.initialize(tutorialState, renderer);
+  inferenceSection.initialize(tutorialState);
+
+  // Create scroll manager with section callbacks
+  scrollManager = new ScrollManager({
+    onSectionActivate: handleSectionActivate,
+    onSectionEnter: handleSectionEnter,
+    onSectionExit: handleSectionExit,
+  });
+
+  // Register all tutorial sections with their activation callbacks
+  const sectionInstances: Record<SectionId, { onActivate: () => void; onDeactivate: () => void }> = {
+    objectives: objectivesSection,
+    training: trainingSection,
+    tour: tourSection,
+    inference: inferenceSection,
+  };
+
+  SECTION_IDS.forEach((sectionId) => {
+    const element = document.getElementById(`section-${sectionId}`);
+    const section = sectionInstances[sectionId];
+    if (element && section) {
+      scrollManager.registerSection(
+        element,
+        sectionId,
+        () => {
+          section.onActivate();
+          onSectionActivate(sectionId);
+        },
+        () => {
+          section.onDeactivate();
+          onSectionDeactivate(sectionId);
+        }
+      );
+    }
+  });
+
+  // Wire up progress indicator buttons
+  const progressNav = document.getElementById('tutorial-progress');
+  if (progressNav) {
+    progressNav.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest('.progress-btn');
+      if (button) {
+        const sectionId = button.getAttribute('data-section') as SectionId;
+        if (sectionId) {
+          scrollManager.scrollToSection(sectionId);
+        }
+      }
+    });
+  }
+
+  // Subscribe to state changes to update progress indicator
+  tutorialState.subscribe((state) => {
+    updateProgressIndicator(state.currentSection);
+  });
+
+  console.log('Tutorial initialized with scroll detection');
+}
+
+/**
+ * Handle section becoming the active (most visible) section
+ */
+function handleSectionActivate(sectionId: SectionId): void {
+  tutorialState.setCurrentSection(sectionId);
+  console.log(`Section activated: ${sectionId}`);
+}
+
+/**
+ * Handle section entering the viewport
+ */
+function handleSectionEnter(sectionId: SectionId): void {
+  console.log(`Section entered viewport: ${sectionId}`);
+}
+
+/**
+ * Handle section exiting the viewport
+ */
+function handleSectionExit(sectionId: SectionId): void {
+  console.log(`Section exited viewport: ${sectionId}`);
+}
+
+/**
+ * Called when a section becomes active (via scroll manager callback)
+ * FR-017: Stop active processes when scrolling away
+ */
+function onSectionActivate(sectionId: SectionId): void {
+  // Section-specific activation logic can be added here
+  console.log(`Section ${sectionId} activated`);
+}
+
+/**
+ * Called when a section is deactivated (scrolled away from)
+ * FR-017: Stop any active process when user scrolls away
+ */
+function onSectionDeactivate(sectionId: SectionId): void {
+  // Stop training if running when scrolling away from training section
+  if (sectionId === 'training' && playbackControls?.isPlaying()) {
+    playbackControls.pause();
+    tutorialState.stopTraining();
+    console.log('Training paused - scrolled away from training section');
+  }
+
+  // Cancel demo if running when scrolling away from inference section
+  if (sectionId === 'inference' && demoStateMachine.getState().mode !== 'idle') {
+    demoStateMachine.cancel();
+    console.log('Demo cancelled - scrolled away from inference section');
+  }
+}
+
+/**
+ * Update progress indicator to show current section
+ */
+function updateProgressIndicator(currentSection: SectionId): void {
+  const buttons = document.querySelectorAll('.progress-btn');
+  buttons.forEach((button) => {
+    const sectionId = button.getAttribute('data-section');
+    if (sectionId === currentSection) {
+      button.setAttribute('aria-current', 'step');
+    } else {
+      button.removeAttribute('aria-current');
+    }
+  });
+}
 
 // Export for use by other modules
 export {

@@ -3,34 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neural Network Visualiser</title>
+  <title>Neural Network Training Tutorial</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <main id="app">
-    <header>
-      <h1>Neural Network Visualiser</h1>
-    </header>
-    <!-- Training panel on left -->
-    <aside id="training-panel" class="control-panel">
-      <h3>Train Network</h3>
-      <!-- T012: Container for training visualization info display -->
-      <div id="training-info-container" aria-label="Training Information"></div>
-      <div id="controls"></div>
-    </aside>
-    <!-- Visualization in center -->
-    <section id="visualisation">
-      <svg id="network-svg"></svg>
+  <!-- Skip link for accessibility -->
+  <a href="#section-objectives" class="skip-link">Skip to content</a>
+
+  <!-- Progress indicator (fixed at top) -->
+  <nav id="tutorial-progress" class="tutorial-progress" aria-label="Tutorial progress">
+    <button data-section="objectives" class="progress-btn" aria-current="step">
+      <span class="progress-number">1</span>
+      <span class="progress-label">Objectives</span>
+    </button>
+    <button data-section="training" class="progress-btn">
+      <span class="progress-number">2</span>
+      <span class="progress-label">Training</span>
+    </button>
+    <button data-section="tour" class="progress-btn">
+      <span class="progress-number">3</span>
+      <span class="progress-label">Trained Network</span>
+    </button>
+    <button data-section="inference" class="progress-btn">
+      <span class="progress-number">4</span>
+      <span class="progress-label">Inference</span>
+    </button>
+  </nav>
+
+  <main id="app" class="tutorial-container">
+    <!-- Section 1: Objectives (full width, centered) -->
+    <section id="section-objectives" class="tutorial-section tutorial-section--full" role="region" aria-label="Tutorial objectives">
+      <div class="section-content">
+        <h1 tabindex="-1">Training a Neural Network to Solve XOR</h1>
+        <div class="objectives-intro">
+          <p class="lead">
+            In this interactive tutorial, you'll learn how neural networks learn by training one to solve the
+            <strong>XOR (exclusive or)</strong> problem - a classic challenge that simple linear classifiers cannot solve.
+          </p>
+          <div class="xor-table">
+            <h2>The XOR Truth Table</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Input A</th>
+                  <th>Input B</th>
+                  <th>Output (A XOR B)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>0</td><td>0</td><td>0</td></tr>
+                <tr><td>0</td><td>1</td><td>1</td></tr>
+                <tr><td>1</td><td>0</td><td>1</td></tr>
+                <tr><td>1</td><td>1</td><td>0</td></tr>
+              </tbody>
+            </table>
+            <p class="table-note">XOR outputs 1 when inputs are <em>different</em>, and 0 when they're the <em>same</em>.</p>
+          </div>
+          <div class="objectives-list">
+            <h2>What You'll Learn</h2>
+            <ul>
+              <li>How neural networks are structured with <strong>layers</strong>, <strong>neurons</strong>, and <strong>weights</strong></li>
+              <li>How the <strong>forward pass</strong> computes predictions</li>
+              <li>How <strong>backpropagation</strong> adjusts weights to reduce error</li>
+              <li>How <strong>loss</strong> measures prediction accuracy</li>
+              <li>How to run <strong>inference</strong> on a trained network</li>
+            </ul>
+          </div>
+          <p class="scroll-hint">Scroll down to begin the training journey ↓</p>
+        </div>
+      </div>
     </section>
-    <!-- Run panel on right -->
-    <aside id="run-panel" class="control-panel">
-      <h3>Run Network</h3>
-      <div id="demo-controls" aria-label="Run Network Controls"></div>
-      <div id="calculation-panel" aria-label="Calculation Display"></div>
-    </aside>
+
+    <!-- Sections 2-4: Two column layout with sticky visualization -->
+    <div class="tutorial-scrolly">
+      <!-- Left side: Scrolling content -->
+      <div class="scrolly-content">
+        <!-- Section 2: Training -->
+        <section id="section-training" class="tutorial-section scrolly-section" role="region" aria-label="Training the network">
+          <h2 tabindex="-1">Training the Network</h2>
+          <div id="training-explanation" class="explanation-content">
+            <!-- Guided training content will be inserted here -->
+          </div>
+          <aside id="training-panel" class="control-panel">
+            <h3>Training Controls</h3>
+            <div id="training-info-container" aria-label="Training Information"></div>
+            <div id="controls"></div>
+          </aside>
+        </section>
+
+        <!-- Section 3: Trained Network Tour -->
+        <section id="section-tour" class="tutorial-section scrolly-section" role="region" aria-label="Exploring the trained network">
+          <h2 tabindex="-1">The Trained Network</h2>
+          <div id="tour-explanation" class="explanation-content">
+            <!-- Tour content will be inserted here -->
+          </div>
+        </section>
+
+        <!-- Section 4: Inference -->
+        <section id="section-inference" class="tutorial-section scrolly-section" role="region" aria-label="Running inference">
+          <h2 tabindex="-1">Running Inference</h2>
+          <div id="inference-explanation" class="explanation-content">
+            <!-- Inference content will be inserted here -->
+          </div>
+          <aside id="run-panel" class="control-panel">
+            <h3>Run Network</h3>
+            <div id="demo-controls" aria-label="Run Network Controls"></div>
+            <div id="calculation-panel" aria-label="Calculation Display"></div>
+          </aside>
+        </section>
+      </div>
+
+      <!-- Right side: Sticky visualization -->
+      <div class="scrolly-viz">
+        <div class="viz-container">
+          <svg id="network-svg"></svg>
+        </div>
+      </div>
+    </div>
   </main>
+
+  <!-- Shared tooltip and panels -->
   <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
   <div id="weight-history-panel"></div>
+
   <script type="module" src="./main.ts"></script>
 </body>
 </html>

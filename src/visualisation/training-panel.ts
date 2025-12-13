@@ -21,8 +21,6 @@ interface TrainingPanelState {
   currentError: number | null;
   isTraining: boolean;
   isConverged: boolean;
-  /** T040: Animation mode state */
-  isAnimated: boolean;
 }
 
 /**
@@ -38,15 +36,9 @@ export class TrainingPanel {
   private sampleDisplayEl: HTMLElement | null = null;
   private errorDisplayEl: HTMLElement | null = null;
   private statusEl: HTMLElement | null = null;
-  /** T040: Animation toggle button */
-  private animationToggleEl: HTMLButtonElement | null = null;
 
-  /** T040: Callback for animation state change */
-  private onAnimationChange?: (isAnimated: boolean) => void;
-
-  constructor(containerId: string = 'training-info-container', options?: { onAnimationChange?: (isAnimated: boolean) => void }) {
+  constructor(containerId: string = 'training-info-container') {
     this.container = document.getElementById(containerId);
-    this.onAnimationChange = options?.onAnimationChange;
     this.state = {
       stepCount: 0,
       loss: 1.0,
@@ -56,7 +48,6 @@ export class TrainingPanel {
       currentError: null,
       isTraining: false,
       isConverged: false,
-      isAnimated: false,
     };
 
     this.createUI();
@@ -99,9 +90,6 @@ export class TrainingPanel {
           </div>
         </div>
         <div id="training-status" class="training-status ready">Ready</div>
-        <button id="animation-toggle" class="control-btn animation-toggle" aria-pressed="false">
-          Animate Training
-        </button>
       </div>
     `;
 
@@ -111,39 +99,6 @@ export class TrainingPanel {
     this.sampleDisplayEl = document.getElementById('training-sample-display');
     this.errorDisplayEl = document.getElementById('training-error-display');
     this.statusEl = document.getElementById('training-status');
-
-    // T040: Setup animation toggle
-    this.animationToggleEl = document.getElementById('animation-toggle') as HTMLButtonElement;
-    this.animationToggleEl?.addEventListener('click', () => this.toggleAnimation());
-  }
-
-  /**
-   * T040: Toggle animation mode
-   */
-  private toggleAnimation(): void {
-    this.setAnimated(!this.state.isAnimated);
-  }
-
-  /**
-   * T041: Set animation mode
-   */
-  setAnimated(isAnimated: boolean): void {
-    this.state.isAnimated = isAnimated;
-
-    if (this.animationToggleEl) {
-      this.animationToggleEl.classList.toggle('active', isAnimated);
-      this.animationToggleEl.setAttribute('aria-pressed', isAnimated.toString());
-      this.animationToggleEl.textContent = isAnimated ? 'Animation On' : 'Animate Training';
-    }
-
-    this.onAnimationChange?.(isAnimated);
-  }
-
-  /**
-   * T041: Get animation mode
-   */
-  getAnimated(): boolean {
-    return this.state.isAnimated;
   }
 
   /**
@@ -274,7 +229,6 @@ export class TrainingPanel {
       currentError: null,
       isTraining: false,
       isConverged: false,
-      isAnimated: this.state.isAnimated, // Preserve animation setting across resets
     };
 
     if (this.stepCountEl) {
