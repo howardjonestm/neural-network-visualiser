@@ -33,6 +33,9 @@ export class ParametersControls {
     this.updateDisplay();
   }
 
+  /**
+   * 009: Learning rate slider shown directly (not hidden in Advanced Settings)
+   */
   private createUI(): void {
     const container = document.getElementById('controls');
     if (!container) {
@@ -40,29 +43,31 @@ export class ParametersControls {
       return;
     }
 
-    // Create parameters section
     const parametersSection = document.createElement('div');
     parametersSection.className = 'control-section parameters-controls';
     parametersSection.innerHTML = `
-      <h3>Learning Rate</h3>
-      <div class="slider-container">
-        <input
-          type="range"
-          id="learning-rate-slider"
-          min="${this.minRate}"
-          max="${this.maxRate}"
-          step="${this.step}"
-          value="${this.config.learningRate}"
-          aria-label="Adjust learning rate"
-          aria-valuemin="${this.minRate}"
-          aria-valuemax="${this.maxRate}"
-          aria-valuenow="${this.config.learningRate}"
-        />
-        <span id="learning-rate-value" class="slider-value">${this.config.learningRate.toFixed(2)}</span>
-      </div>
-      <div class="parameter-hints">
-        <span>Low: Slow, stable</span>
-        <span>High: Fast, unstable</span>
+      <div class="learning-rate-control">
+        <label for="learning-rate-slider" class="learning-rate-label">
+          Learning Rate: <span id="learning-rate-value" class="slider-value">${this.config.learningRate.toFixed(2)}</span>
+        </label>
+        <div class="slider-container">
+          <input
+            type="range"
+            id="learning-rate-slider"
+            min="${this.minRate}"
+            max="${this.maxRate}"
+            step="${this.step}"
+            value="${this.config.learningRate}"
+            aria-label="Adjust learning rate"
+            aria-valuemin="${this.minRate}"
+            aria-valuemax="${this.maxRate}"
+            aria-valuenow="${this.config.learningRate}"
+          />
+        </div>
+        <div class="parameter-hints">
+          <span>Slow</span>
+          <span>Fast</span>
+        </div>
       </div>
     `;
 

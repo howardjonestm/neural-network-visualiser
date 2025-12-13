@@ -340,6 +340,174 @@ export class NetworkRenderer {
    * Applies temporary CSS classes with fade-out animation and direction indicators
    * @param deltas - Map of weight IDs to delta information
    */
+  /**
+   * T013: Animate forward pass - neurons fire layer-by-layer from input to output
+   * Duration: 2-3 seconds total, ~500ms per layer
+   */
+  animateForwardPass(onComplete?: () => void): void {
+    const layerCount = this.network.layers.length;
+    const perLayerDelay = 500; // 500ms per layer for 2-3s total
+
+    this.network.layers.forEach((_layer, layerIndex) => {
+      const neurons = this.neuronsGroup
+        .selectAll<SVGCircleElement, NeuronPosition>('circle.neuron')
+        .filter((d) => {
+          const neuron = this.getNeuron(d.neuronId);
+          return neuron?.layerIndex === layerIndex;
+        });
+
+      // Add firing class with delay
+      neurons
+        .transition()
+        .delay(layerIndex * perLayerDelay)
+        .duration(300)
+        .attr('class', 'neuron neuron-firing')
+        .transition()
+        .delay(200)
+        .duration(200)
+        .attr('class', 'neuron');
+    });
+
+    // Call completion handler after full animation
+    if (onComplete) {
+      setTimeout(onComplete, layerCount * perLayerDelay + 500);
+    }
+  }
+
+  /**
+   * T014: Highlight output layer for loss calculation visualization
+   */
+  animateLossHighlight(onComplete?: () => void): void {
+    const outputLayerIndex = this.network.layers.length - 1;
+
+    // Highlight output neurons
+    this.neuronsGroup
+      .selectAll<SVGCircleElement, NeuronPosition>('circle.neuron')
+      .filter((d) => {
+        const neuron = this.getNeuron(d.neuronId);
+        return neuron?.layerIndex === outputLayerIndex;
+      })
+      .transition()
+      .duration(500)
+      .style('filter', 'brightness(1.5) drop-shadow(0 0 10px rgba(255, 100, 100, 0.8))')
+      .transition()
+      .delay(1500)
+      .duration(500)
+      .style('filter', null);
+
+    if (onComplete) {
+      setTimeout(onComplete, 2500);
+    }
+  }
+
+  /**
+   * T015: Animate backpropagation - weights animate backward from output to input
+   * Duration: 2-3 seconds total
+   */
+  animateBackpropagation(onComplete?: () => void): void {
+    const layerCount = this.network.layers.length;
+    const perLayerDelay = 500;
+
+    // Animate layers in reverse order (output to input)
+    for (let i = layerCount - 1; i >= 0; i--) {
+      const reverseIndex = layerCount - 1 - i;
+
+      // Find weights connecting to this layer
+      this.weightsGroup
+        .selectAll<SVGLineElement, WeightLine>('line.weight')
+        .filter((d) => {
+          // Get target neuron layer
+          const toNeuron = this.getNeuron(d.weightId.split('_')[2]);
+          return toNeuron?.layerIndex === i;
+        })
+        .transition()
+        .delay(reverseIndex * perLayerDelay)
+        .duration(300)
+        .attr('class', (d) => {
+          const weight = this.getWeight(d.weightId);
+          return `weight weight-backprop ${weight ? getWeightColorClass(weight.value) : 'positive'}`;
+        })
+        .transition()
+        .delay(200)
+        .duration(200)
+        .attr('class', (d) => {
+          const weight = this.getWeight(d.weightId);
+          return `weight ${weight ? getWeightColorClass(weight.value) : 'positive'}`;
+        });
+    }
+
+    if (onComplete) {
+      setTimeout(onComplete, layerCount * perLayerDelay + 500);
+    }
+  }
+
+  /**
+   * T019: Cancel any active animations
+   */
+  cancelAnimations(): void {
+    // Interrupt all transitions
+    this.neuronsGroup.selectAll('*').interrupt();
+    this.weightsGroup.selectAll('*').interrupt();
+
+    // Reset any animation classes
+    this.neuronsGroup
+      .selectAll('circle.neuron')
+      .attr('class', 'neuron')
+      .style('filter', null);
+
+    this.weightsGroup
+      .selectAll<SVGLineElement, WeightLine>('line.weight')
+      .attr('class', (d) => {
+        const weight = this.getWeight(d.weightId);
+        return `weight ${weight ? getWeightColorClass(weight.value) : 'positive'}`;
+      });
+  }
+
+  /**
+   * 009 T037, T040: Show/clear prediction overlay on output neuron
+   */
+  private predictionOverlay: d3.Selection<SVGTextElement, unknown, HTMLElement, unknown> | null = null;
+
+  showPredictionOverlay(predicted: number, expected: number): void {
+    // Get output neuron position (last layer, first neuron)
+    const outputLayerIndex = this.network.layers.length - 1;
+    let outputNeuronPos: NeuronPosition | undefined;
+
+    for (const [, pos] of this.neuronPositions) {
+      const neuron = this.getNeuron(pos.neuronId);
+      if (neuron?.layerIndex === outputLayerIndex) {
+        outputNeuronPos = pos;
+        break;
+      }
+    }
+
+    if (!outputNeuronPos) return;
+
+    // Remove existing overlay if any
+    this.clearPredictionOverlay();
+
+    const predictedClass = predicted >= 0.5 ? 1 : 0;
+    const isCorrect = predictedClass === expected;
+
+    // Create text overlay above output neuron
+    this.predictionOverlay = this.svg
+      .append('text')
+      .attr('class', `prediction-overlay ${isCorrect ? 'correct' : 'incorrect'}`)
+      .attr('x', outputNeuronPos.x)
+      .attr('y', outputNeuronPos.y - 35)
+      .attr('text-anchor', 'middle')
+      .text(`${predicted.toFixed(2)}`);
+  }
+
+  clearPredictionOverlay(): void {
+    if (this.predictionOverlay) {
+      this.predictionOverlay.remove();
+      this.predictionOverlay = null;
+    }
+    // Also remove by class selector in case reference was lost
+    this.svg.selectAll('.prediction-overlay').remove();
+  }
+
   highlightWeightChanges(deltas: Map<string, WeightDelta>): void {
     // Skip if no deltas
     if (deltas.size === 0) return;

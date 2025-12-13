@@ -228,6 +228,45 @@ export class CalculationPanel {
   updateStep(step: DemoStep): void {
     this.render(step);
   }
+
+  /**
+   * 009: Show final prediction result inside the calculation panel
+   */
+  showPrediction(predicted: number, expected: number): void {
+    if (!this.contentEl) return;
+
+    // Remove existing prediction section if present
+    const existing = this.contentEl.querySelector('.calculation-prediction-section');
+    if (existing) {
+      existing.remove();
+    }
+
+    const predictedClass = predicted >= 0.5 ? 1 : 0;
+    const isCorrect = predictedClass === expected;
+    const statusClass = isCorrect ? 'correct' : 'incorrect';
+
+    const predictionSection = document.createElement('div');
+    predictionSection.className = 'calculation-prediction-section';
+    predictionSection.innerHTML = `
+      <div class="calculation-prediction-header">Final Result</div>
+      <div class="calculation-prediction-result ${statusClass}">
+        <div class="prediction-row">
+          <span class="prediction-label">Output:</span>
+          <span class="prediction-value">${predicted.toFixed(4)}</span>
+        </div>
+        <div class="prediction-row">
+          <span class="prediction-label">Expected:</span>
+          <span class="prediction-value">${expected}</span>
+        </div>
+        <div class="prediction-verdict ${statusClass}">
+          ${isCorrect ? '✓ Correct!' : '✗ Incorrect'}
+        </div>
+      </div>
+    `;
+
+    this.contentEl.appendChild(predictionSection);
+    predictionSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 }
 
 /**
